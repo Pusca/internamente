@@ -1,0 +1,60 @@
+# ---------------------------------------------
+# BLOCCO FILE SENSIBILI DI WORDPRESS
+# ---------------------------------------------
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteRule ^wp-admin/includes/ - [F,L]
+RewriteRule !^wp-includes/ - [S=3]
+RewriteRule ^wp-includes/[^/]+\.php$ - [F,L]
+RewriteRule ^wp-includes/js/tinymce/langs/.+\.php - [F,L]
+RewriteRule ^wp-includes/theme-compat/ - [F,L]
+</IfModule>
+
+<Files wp-config.php>
+<IfModule !mod_authz_core.c>
+order allow,deny
+deny from all
+</IfModule>
+<IfModule mod_authz_core.c>
+require all denied
+</IfModule>
+</Files>
+
+# ---------------------------------------------
+# AUMENTO LIMITI PHP PER IMPORT LUNGHI
+# ---------------------------------------------
+<IfModule mod_php7.c>
+    php_value max_execution_time 3000
+    php_value max_input_time 3000
+    php_value memory_limit 512M
+    php_value upload_max_filesize 256M
+    php_value post_max_size 256M
+    php_value max_input_vars 5000
+</IfModule>
+
+<IfModule mod_php8.c>
+    php_value max_execution_time 3000
+    php_value max_input_time 3000
+    php_value memory_limit 512M
+    php_value upload_max_filesize 256M
+    php_value post_max_size 256M
+    php_value max_input_vars 5000
+</IfModule>
+
+# ---------------------------------------------
+# BEGIN WordPress
+# Le direttive (linee) tra "BEGIN WordPress" e "END WordPress" sono
+# generate dinamicamente, e dovrebbero essere modificate solo tramite i filtri di WordPress.
+# Ogni modifica alle direttive tra questi marcatori verrà sovrascritta.
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+</IfModule>
+
+# END WordPress

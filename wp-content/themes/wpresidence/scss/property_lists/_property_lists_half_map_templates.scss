@@ -1,0 +1,206 @@
+/**
+ * Google Map Property List Sidebar Styles for WpResidence Theme
+ *
+ * This file contains styles for the Google Map property list sidebar,
+ * including the map container, filters, and mobile controls.
+ *
+ * @package WpResidence
+ * @subpackage PropertyListingSidebar
+ * @since 1.0.0
+ */
+
+
+ body.wpresidence_half_map_body_class {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+
+    &.admin-bar{
+        padding-top: 32px;
+    }
+
+    #all_wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+ 
+        overflow: hidden;
+    }
+ 
+    .container-fluid.px-0 {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .content_wrapper {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+
+        .d-flex {
+            flex: 1;
+        }
+    }
+}
+
+
+
+
+
+
+// Main sidebar container
+#google_map_prop_list_sidebar {
+    position: relative;
+    right: 0;
+    bottom: 0;
+    top: 0px;
+    overflow-y: scroll;
+    background: var(--wp-estate-background-color-option, var(--wp-estate-background-color));
+    padding: 0px;
+    overflow-x: hidden;
+    z-index: 0;
+    margin-bottom: 30px;
+
+    // Inner elements styling
+    .search_param {
+        float:left;
+    }
+
+    .search_unit_wrapper {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+
+    }
+    
+    
+    .submit_container_half {
+        display: none;
+    }
+
+    .single-content {
+        padding: 25px 15px 0px 15px;
+        display: inline-block;
+        margin-bottom: 0px;
+        min-height: 85px;
+    }
+
+    .entry-title {
+        width: 70%;
+    }
+
+    #listing_ajax_container {
+        margin: 0px 0px 0px 0px;
+    }
+
+    .half_map_filters_wrapper {
+        width: 100%;
+    }
+
+    .no_results {
+        margin-left: 2px;
+    }
+
+    .no_results_title {
+        margin-left: 5px;
+    }
+
+    // Variant styling for half_type2
+    &.half_type2 {
+        margin-top: 27px;
+    }
+}
+
+// Filter wrapper styles
+.wpresidence_half_map_filter_wrapper {
+    position: absolute;
+    right: 15px;
+    bottom: -65px;
+
+    .wpresidence_dropdown.wpresidence_filters_dropdown .btn:not(:disabled):not(.disabled):active:focus, 
+    .wpresidence_dropdown.wpresidence_filters_dropdown .btn:not(:disabled):not(.disabled).active:focus{
+        border: 1px solid #e7e7e7;
+    }
+
+
+    .wpresidence_dropdown .dropdown-toggle {
+        width: 100%;
+        padding: 10px 30px 10px 15px;
+        border-radius: var(--wp-estate-border-radius-corner-option,var(--wp_estate_border_radius_corner));
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+}
+
+// Results count styling
+.half_results {
+    font-size: 24px;
+}
+
+// Mobile controls wrapper
+.half_map_controllers_wrapper {
+    display: none;
+    position: fixed;
+    width: 85%;
+    background-color: #fff;
+    bottom: 13px;
+    left: 7.5%;
+    z-index: 99;
+    @include box-shadow(card);
+    border-radius: 67px;
+    border: 1px solid #f0f3f7;
+    overflow: hidden;
+
+    i {
+        font-size: 14px;
+        color: var(--wp-estate-main-color-option, var(--wp-estate-main-color));
+      
+    }
+}
+
+// Mobile toggle buttons
+.half_mobile_toggle_map,
+.half_mobile_toggle_listings {
+    text-align: center;
+    padding: 12px;
+    width: 50%;
+    font-weight: 500;
+    color: var(--wp_estate_headings_color-option, var(--wp_estate_headings_color));;
+    font-size: 14px;
+    float: left;
+    display: flex;
+    align-items: center;
+    align-content: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+// Active control state
+.half_control_visible {
+    background-color: #eee;
+}
+
+// Google Map wrapper styles
+#google_map_prop_list_wrapper {
+    #gmap_wrapper,
+    #googleMap {
+        height: 100% !important;
+    }
+
+    .gmap-controls {
+        top: 0px;
+        left: 0px;
+        margin-left: 0px;
+        transform: none;
+        width: 100%;
+    }
+
+    #gmap-control {
+        right: 15px;
+    }
+}

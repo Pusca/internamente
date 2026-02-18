@@ -1,0 +1,45 @@
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Env / secrets
+.env
+.env.*
+*.pem
+*.key
+
+# WP core caches & uploads
+wp-content/uploads/
+wp-content/cache/
+wp-content/upgrade/
+
+# Backup plugins / exports
+wp-content/ai1wm-backups/
+wp-content/backups/
+wp-content/updraft/
+wp-content/wpvividbackups/
+wp-content/backup-db/
+wp-content/backwpup-*
+
+# WP All Import temp files (optional, spesso enormi)
+wp-content/uploads/wpallimport/
+
+# Cache lato server (LiteSpeed ecc.)
+lscache/
+tmp/
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.bak
+
+# Do NOT versionare config con credenziali
+wp-config.php
