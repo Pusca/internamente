@@ -5,9 +5,7 @@
 
     const form = document.getElementById('iv-form');
     const wrap = document.getElementById('iv-wrap');
-    if (!form || !wrap) {
-      return;
-    }
+    if (!form || !wrap) return;
 
     const steps = Array.from(form.querySelectorAll('.iv-step'));
     const totalSteps = steps.length;
@@ -16,12 +14,10 @@
     const stepTotalEl = document.getElementById('iv-step-total');
     const stepHintEl = document.getElementById('iv-step-hint');
     const progressFill = document.getElementById('iv-progress-fill');
-
     const statusEl = document.getElementById('iv-status');
 
     const cardEl = document.getElementById('iv-card');
     const lockEl = document.getElementById('iv-lock');
-
     const badgeEl = document.getElementById('iv-badge');
     const priceMainEl = document.getElementById('iv-price-main');
     const priceRangeEl = document.getElementById('iv-price-range');
@@ -44,10 +40,10 @@
 
     const stepHints = {
       1: 'Dove si trova l\'immobile?',
-      2: 'Che immobile e quanto e grande?',
-      3: 'Dettagli interni e prestazioni',
+      2: 'Tipo immobile e dimensioni',
+      3: 'Qualita e stato generale',
       4: 'Accessori e contesto',
-      5: 'Lasciaci i contatti',
+      5: 'I tuoi contatti',
       6: 'Conferma invio',
     };
 
@@ -66,7 +62,11 @@
     function formatEUR(n) {
       if (!isFinite(n)) return '-';
       try {
-        return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+        return new Intl.NumberFormat('it-IT', {
+          style: 'currency',
+          currency: 'EUR',
+          maximumFractionDigits: 0,
+        }).format(n);
       } catch (e) {
         return Math.round(n).toLocaleString('it-IT') + ' EUR';
       }
@@ -144,8 +144,8 @@
       steps.forEach((s, i) => {
         s.style.display = i === stepIndex ? 'block' : 'none';
       });
-      const stepNumber = stepIndex + 1;
 
+      const stepNumber = stepIndex + 1;
       if (stepNumEl) stepNumEl.textContent = String(stepNumber);
       if (stepHintEl) stepHintEl.textContent = stepHints[stepNumber] || '';
       if (progressFill) progressFill.style.width = `${Math.round((stepNumber / totalSteps) * 100)}%`;
@@ -178,7 +178,7 @@
           }
           if (el.type === 'email' && v && !v.includes('@')) {
             ok = false;
-            setFieldError(el, 'Inserisci un email valida.');
+            setFieldError(el, 'Inserisci un\'email valida.');
           }
         }
       });
@@ -200,19 +200,28 @@
       return ok;
     }
 
-    function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
-    function roundTo(x, step) { return Math.round(x / step) * step; }
+    function clamp(x, a, b) {
+      return Math.max(a, Math.min(b, x));
+    }
+
+    function roundTo(x, step) {
+      return Math.round(x / step) * step;
+    }
 
     function countMeaningfulFields() {
-      const names = ['address', 'city', 'cap', 'type', 'sqm', 'rooms', 'baths', 'year', 'condition', 'energy', 'floor', 'heating', 'parking', 'parking_sqm', 'outdoor', 'outdoor_sqm', 'exposure', 'notes'];
+      const names = [
+        'address', 'city', 'cap', 'type', 'sqm', 'rooms', 'baths', 'year', 'condition', 'energy', 'floor',
+        'area_quality', 'occupancy', 'building_condition', 'heating', 'parking', 'parking_sqm', 'outdoor',
+        'outdoor_sqm', 'exposure', 'noise', 'brightness', 'notes',
+      ];
       let c = 0;
       names.forEach((n) => {
         const v = getValue(n);
-        if (v && v !== '') c++;
+        if (v && v !== '') c += 1;
       });
       ['elevator', 'furnished', 'ac', 'cellar', 'solar', 'view'].forEach((n) => {
         const el = form.querySelector(`[name="${n}"]`);
-        if (el && el.checked) c++;
+        if (el && el.checked) c += 1;
       });
       return c;
     }
@@ -225,13 +234,37 @@
       const baseSqm = city && pricePerSqm[city] ? pricePerSqm[city] : 1000;
       let value = baseSqm * sqm;
 
-      const typeFactor = ({ attico: 1.08, villa: 1.03, 'casa-indipendente': 0.98, bifamiliare: 1.0, loft: 1.02, ufficio: 0.95, negozio: 0.92, appartamento: 1.0 })[getValue('type')] ?? 1.0;
+      const type = getValue('type');
+      const typeFactor = ({
+        attico: 1.08,
+        villa: 1.03,
+        'casa-indipendente': 0.98,
+        bifamiliare: 1.0,
+        loft: 1.02,
+        ufficio: 0.95,
+        negozio: 0.92,
+        appartamento: 1.0,
+      })[type] ?? 1.0;
       value *= typeFactor;
 
-      const condFactor = ({ nuovo: 1.1, buono: 1.0, 'da-ristrutturare': 0.88 })[getValue('condition')] ?? 1.0;
+      const condition = getValue('condition');
+      const condFactor = ({ nuovo: 1.1, buono: 1.0, 'da-ristrutturare': 0.88 })[condition] ?? 1.0;
       value *= condFactor;
 
-      const energyFactor = ({ A4: 1.1, A3: 1.09, A2: 1.08, A1: 1.07, A: 1.06, B: 1.04, C: 1.02, D: 1.0, E: 0.97, F: 0.94, G: 0.9, ND: 1.0 })[getValue('energy')] ?? 1.0;
+      const buildingCondition = getValue('building_condition');
+      const buildingFactor = ({ ottimo: 1.02, buono: 1.0, da_aggiornare: 0.97 })[buildingCondition] ?? 1.0;
+      value *= buildingFactor;
+
+      const areaQuality = getValue('area_quality');
+      const areaFactor = ({ centrale: 1.08, semicentrale: 1.03, periferica: 0.95, frazione: 0.9 })[areaQuality] ?? 1.0;
+      value *= areaFactor;
+
+      const energy = getValue('energy');
+      const energyFactor = ({
+        A4: 1.1, A3: 1.09, A2: 1.08, A1: 1.07,
+        A: 1.06, B: 1.04, C: 1.02, D: 1.0,
+        E: 0.97, F: 0.94, G: 0.9, ND: 1.0,
+      })[energy] ?? 1.0;
       value *= energyFactor;
 
       const year = getNumber('year');
@@ -243,6 +276,10 @@
       if (floor === 't') value *= 0.98;
       if (['4', '5', '6', 'm'].includes(floor) && !elevator) value *= 0.96;
       if (['4', '5', '6'].includes(floor) && elevator) value *= 1.01;
+
+      const occupancy = getValue('occupancy');
+      if (occupancy === 'locato') value *= 0.97;
+      if (occupancy === 'libero_subito') value *= 1.01;
 
       const heating = getValue('heating');
       if (heating === 'pompa-calore') value *= 1.02;
@@ -259,6 +296,14 @@
       if (outdoor === 'giardino') value *= 1.04;
       if (outdoor === 'balcone+giardino') value *= 1.05;
       if (outdoor === 'terrazzo+giardino') value *= 1.06;
+
+      const noise = getValue('noise');
+      if (noise === 'silenziosa') value *= 1.015;
+      if (noise === 'trafficata') value *= 0.975;
+
+      const brightness = getValue('brightness');
+      if (brightness === 'alta') value *= 1.02;
+      if (brightness === 'bassa') value *= 0.98;
 
       if (form.querySelector('[name="cellar"]')?.checked) value *= 1.01;
       if (form.querySelector('[name="solar"]')?.checked) value *= 1.02;
@@ -278,14 +323,14 @@
       const parkingSqm = getNumber('parking_sqm') || 0;
       if (parkingSqm > 0) {
         let w = 0.22;
-        if (parking === 'garage' || parking === 'posto-auto+garage') w = 0.30;
+        if (parking === 'garage' || parking === 'posto-auto+garage') w = 0.3;
         value += parkingSqm * baseSqm * w;
       }
 
       value *= ESTIMATE_UPLIFT;
 
       const filledCount = countMeaningfulFields();
-      const rangePct = clamp(0.22 - (filledCount * 0.01), 0.10, 0.22);
+      const rangePct = clamp(0.22 - (filledCount * 0.0085), 0.09, 0.22);
 
       const fair = roundTo(value, 1000);
       const min = roundTo(fair * (1 - rangePct), 1000);
@@ -294,26 +339,30 @@
       const best = roundTo(fair * 1.08, 1000);
       const confidence = rangePct <= 0.12 ? 'Piu precisa' : rangePct <= 0.16 ? 'Buona' : 'Indicativa';
 
-      return { fair, min, max, fast, best, confidence, baseSqm, rangePct };
+      return { fair, min, max, fast, best, confidence };
     }
 
-    function updateEstimateFromObject(est, isReal) {
+    function updateEstimateFromObject(est, isFinal) {
       if (!est) {
-        badgeEl.textContent = 'Indicativa';
-        priceMainEl.textContent = '-';
-        priceRangeEl.textContent = 'Compila i dati per vedere la stima';
-        scenariosEl.style.display = 'none';
+        if (badgeEl) badgeEl.textContent = 'Indicativa';
+        if (priceMainEl) priceMainEl.textContent = '-';
+        if (priceRangeEl) priceRangeEl.textContent = 'Compila i dati per vedere la stima';
+        if (scenariosEl) scenariosEl.style.display = 'none';
         return;
       }
 
-      badgeEl.textContent = isReal ? 'Dettagliata' : est.confidence;
-      priceMainEl.textContent = formatEUR(Number(est.fair));
-      priceRangeEl.textContent = isReal ? '' : `Range stimato: ${formatEUR(Number(est.min))} - ${formatEUR(Number(est.max))}`;
+      if (badgeEl) badgeEl.textContent = isFinal ? 'Aggiornata' : est.confidence;
+      if (priceMainEl) priceMainEl.textContent = formatEUR(Number(est.fair));
+      if (priceRangeEl) {
+        priceRangeEl.textContent = isFinal
+          ? 'Proposta finale pronta.'
+          : `Range stimato: ${formatEUR(Number(est.min))} - ${formatEUR(Number(est.max))}`;
+      }
 
-      scenariosEl.style.display = 'grid';
-      fastEl.textContent = formatEUR(Number(est.fast));
-      fairEl.textContent = formatEUR(Number(est.fair));
-      maxEl.textContent = formatEUR(Number(est.best));
+      if (scenariosEl) scenariosEl.style.display = 'grid';
+      if (fastEl) fastEl.textContent = formatEUR(Number(est.fast));
+      if (fairEl) fairEl.textContent = formatEUR(Number(est.fair));
+      if (maxEl) maxEl.textContent = formatEUR(Number(est.best));
     }
 
     function updateEstimate() {
@@ -339,8 +388,15 @@
       }
     });
 
-    form.addEventListener('input', () => { updateConditionalSqmFields(); updateEstimate(); });
-    form.addEventListener('change', () => { updateConditionalSqmFields(); updateEstimate(); });
+    form.addEventListener('input', () => {
+      updateConditionalSqmFields();
+      updateEstimate();
+    });
+
+    form.addEventListener('change', () => {
+      updateConditionalSqmFields();
+      updateEstimate();
+    });
 
     const newBtn = document.getElementById('iv-new');
     if (newBtn) {
@@ -357,7 +413,12 @@
       const fd = new FormData();
       fd.append('action', 'ai_estimate');
 
-      ['address', 'city', 'cap', 'type', 'sqm', 'rooms', 'baths', 'year', 'condition', 'energy', 'floor', 'heating', 'parking', 'parking_sqm', 'outdoor', 'outdoor_sqm', 'exposure', 'notes'].forEach((k) => {
+      [
+        'address', 'city', 'cap', 'type', 'sqm', 'rooms', 'baths', 'year',
+        'condition', 'energy', 'floor', 'area_quality', 'occupancy',
+        'building_condition', 'heating', 'parking', 'parking_sqm', 'outdoor',
+        'outdoor_sqm', 'exposure', 'noise', 'brightness', 'notes',
+      ].forEach((k) => {
         const v = getValue(k);
         if (v !== null && v !== '') fd.append(k, v);
       });
@@ -378,14 +439,14 @@
         throw new Error(data.error || 'Errore valutazione dettagliata');
       }
 
-      const e = data.estimate;
+      const est = data.estimate;
       return {
-        fair: Number(e.estimate_fair || 0),
-        min: Number(e.estimate_min || 0),
-        max: Number(e.estimate_max || 0),
-        fast: Number(e.estimate_fast || 0),
-        best: Number(e.estimate_best || 0),
-        confidence: String(e.estimate_confidence || 'Dettagliata'),
+        fair: Number(est.estimate_fair || 0),
+        min: Number(est.estimate_min || 0),
+        max: Number(est.estimate_max || 0),
+        fast: Number(est.estimate_fast || 0),
+        best: Number(est.estimate_best || 0),
+        confidence: String(est.estimate_confidence || 'Aggiornata'),
       };
     }
 
@@ -395,7 +456,7 @@
 
       const requiredFinal = [
         { id: 'iv-name', msg: 'Inserisci nome e cognome.' },
-        { id: 'iv-email', msg: 'Inserisci un email valida.' },
+        { id: 'iv-email', msg: 'Inserisci un\'email valida.' },
         { id: 'iv-phone', msg: 'Inserisci un telefono valido.' },
       ];
       let ok = true;
@@ -408,7 +469,7 @@
         }
         if (el && el.type === 'email' && el.value && !el.value.includes('@')) {
           ok = false;
-          setFieldError(el, 'Inserisci un email valida.');
+          setFieldError(el, 'Inserisci un\'email valida.');
         }
       });
 
@@ -419,23 +480,26 @@
       }
 
       if (!ok) {
-        statusEl.textContent = 'Controlla i campi evidenziati.';
-        statusEl.classList.add('iv-bad');
-        statusEl.style.display = 'inline-block';
+        if (statusEl) {
+          statusEl.textContent = 'Controlla i campi evidenziati.';
+          statusEl.classList.add('iv-bad');
+          statusEl.style.display = 'inline-block';
+        }
         return;
       }
 
-      statusEl.textContent = 'Stiamo completando l analisi dettagliata dell immobile...';
-      statusEl.classList.remove('iv-bad', 'iv-ok');
-      statusEl.style.display = 'inline-block';
+      if (statusEl) {
+        statusEl.textContent = 'Stiamo completando l\'analisi dettagliata dell\'immobile...';
+        statusEl.classList.remove('iv-bad', 'iv-ok');
+        statusEl.style.display = 'inline-block';
+      }
 
       try {
         const aiEst = await requestAiEstimate();
-
         updateEstimateFromObject(aiEst, true);
         setLocked(false);
 
-        statusEl.textContent = 'Invio richiesta...';
+        if (statusEl) statusEl.textContent = 'Invio richiesta...';
 
         const payload = new FormData(form);
         payload.append('action', 'send_lead');
@@ -459,14 +523,18 @@
           thanksRange.textContent = `Vendita rapida: ${formatEUR(aiEst.fast)} | Miglior offerente: ${formatEUR(aiEst.best)}`;
         }
 
-        statusEl.textContent = 'Inviato correttamente.';
-        statusEl.classList.remove('iv-bad');
-        statusEl.classList.add('iv-ok');
+        if (statusEl) {
+          statusEl.textContent = 'Inviato correttamente.';
+          statusEl.classList.remove('iv-bad');
+          statusEl.classList.add('iv-ok');
+        }
       } catch (err) {
         console.error(err);
-        statusEl.textContent = 'Errore durante la valutazione/invio. Riprova piu tardi.';
-        statusEl.classList.add('iv-bad');
-        statusEl.style.display = 'inline-block';
+        if (statusEl) {
+          statusEl.textContent = 'Errore durante la valutazione/invio. Riprova piu tardi.';
+          statusEl.classList.add('iv-bad');
+          statusEl.style.display = 'inline-block';
+        }
       }
     });
 

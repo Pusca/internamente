@@ -118,6 +118,9 @@ function ai_estimate_property()
         'condition' => clean('condition'),
         'energy' => clean('energy'),
         'floor' => clean('floor'),
+        'area_quality' => clean('area_quality'),
+        'occupancy' => clean('occupancy'),
+        'building_condition' => clean('building_condition'),
         'elevator' => clean('elevator'),
         'furnished' => clean('furnished'),
         'ac' => clean('ac'),
@@ -127,6 +130,8 @@ function ai_estimate_property()
         'outdoor' => clean('outdoor'),
         'outdoor_sqm' => clean_num('outdoor_sqm'),
         'exposure' => clean('exposure'),
+        'noise' => clean('noise'),
+        'brightness' => clean('brightness'),
         'cellar' => clean('cellar'),
         'solar' => clean('solar'),
         'view' => clean('view'),
@@ -151,15 +156,17 @@ function ai_estimate_property()
         'summary' => 'Stima sintetica basata su zona, stato, metratura e comparabili recenti.',
     ];
 
-    $system_prompt = 'Sei un valutatore immobiliare per il mercato italiano. '
+    $system_prompt = 'Sei un valutatore immobiliare esperto del mercato italiano residenziale. '
         . 'Rispondi solo con JSON valido, senza markdown, senza testo extra. '
-        . 'La stima deve essere prudente e coerente con i dati ricevuti.';
+        . 'La stima deve essere prudente, coerente con i dati ricevuti e con incertezza realistica se i dati sono incompleti.';
 
     $user_prompt = "Valuta questo immobile e restituisci SOLO JSON con queste chiavi:\n"
         . json_encode(array_keys($schema_hint), JSON_UNESCAPED_UNICODE)
         . "\nDati immobile:\n"
         . json_encode($property, JSON_UNESCAPED_UNICODE)
         . "\nVincoli:\n"
+        . "- Considera: citta, zona (se presente), metratura, tipologia, stato immobile, stato edificio, piano, ascensore, classe energetica, accessori, esposizione, luminosita e rumorosita.\n"
+        . "- Se mancano dati chiave, NON essere aggressivo: usa una stima conservativa e allarga il range.\n"
         . "- Tutti i valori economici devono essere numeri interi in euro.\n"
         . "- estimate_min <= estimate_fair <= estimate_max.\n"
         . "- estimate_fast <= estimate_fair.\n"
@@ -268,6 +275,9 @@ function send_lead_email()
         'Stato immobile' => clean('condition'),
         'Classe energetica' => clean('energy'),
         'Piano' => clean('floor'),
+        'Zona' => clean('area_quality'),
+        'Disponibilita' => clean('occupancy'),
+        'Stato edificio' => clean('building_condition'),
         'Ascensore' => clean('elevator'),
         'Arredato' => clean('furnished'),
         'Climatizzazione' => clean('ac'),
@@ -277,6 +287,8 @@ function send_lead_email()
         'Spazi esterni' => clean('outdoor'),
         'Mq spazi esterni' => clean('outdoor_sqm'),
         'Esposizione' => clean('exposure'),
+        'Rumorosita' => clean('noise'),
+        'Luminosita' => clean('brightness'),
         'Cantina/Solaio' => clean('cellar'),
         'Pannelli solari' => clean('solar'),
         'Vista/Affaccio' => clean('view'),
@@ -303,6 +315,9 @@ function send_lead_email()
 
     $headers = [
         'Content-Type: text/plain; charset=UTF-8',
+        'From: Internamente <no-reply@internamente.com>',
+        'Sender: Internamente <no-reply@internamente.com>',
+        'Return-Path: no-reply@internamente.com',
         'Reply-To: ' . $name . ' <' . $email . '>',
     ];
 
