@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$wp_load = dirname(__FILE__, 3) . '/wp-load.php';
+$wp_load = dirname(__FILE__, 4) . '/wp-load.php';
 if (file_exists($wp_load)) {
     require_once $wp_load;
 }
@@ -278,13 +278,14 @@ function send_lead_email()
         'Note' => clean('notes'),
         '--- STIMA ---' => '',
         'Valore mercato (equo)' => clean('estimate_fair'),
-        'Range minimo' => clean('estimate_min'),
-        'Range massimo' => clean('estimate_max'),
         'Vendita rapida' => clean('estimate_fast'),
-        'Miglior offerente' => clean('estimate_best'),
-        'Affidabilita' => clean('estimate_confidence'),
-        'Base EUR/mq' => clean('estimate_base_sqm'),
-        'Range %' => clean('estimate_range_pct'),
+  'Valore di mercato' => clean('estimate_fair'),
+  'Miglior offerente' => clean('estimate_best'),
+       
+     
+      
+        
+        
     ];
 
     $body = "CONTATTI\n";

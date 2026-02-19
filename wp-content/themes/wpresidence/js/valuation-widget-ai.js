@@ -1,4 +1,4 @@
-﻿(function(){
+(function(){
   const ENDPOINT_URL = '/wp-content/themes/wpresidence/valuation-handler.php';
 
   // Preview locale: +7%
@@ -313,24 +313,60 @@
     return { fair, min, max, fast, best, confidence, baseSqm, rangePct };
   }
 
-  function updateEstimateFromObject(est, isReal){
+   function updateEstimateFromObject(est, isReal)
+  {
     if(!est){
       badgeEl.textContent = "Indicativa";
       priceMainEl.textContent = "—";
-      priceRangeEl.textContent = "Compila i dati per vedere la stima";
+      priceRangeEl.textContent = "Compila i dati
+  per vedere la stima";
       scenariosEl.style.display = "none";
       return;
     }
 
-    badgeEl.textContent = isReal ? "Reale AI" : est.confidence;
-    priceMainEl.textContent = formatEUR(Number(est.fair));
-    priceRangeEl.textContent = `Range stimato: ${formatEUR(Number(est.min))} – ${formatEUR(Number(est.max))}`;
+    badgeEl.textContent = isReal ?
+  "Dettagliata" : est.confidence;
+    priceMainEl.textContent =
+  formatEUR(Number(est.fair));
 
+    if (isReal) {
+      // niente range vecchio sotto al valore
+  principale
+      priceRangeEl.textContent = "";
+    } else {
+      priceRangeEl.textContent = `Range stimato:
+  ${formatEUR(Number(est.min))} –
+  ${formatEUR(Number(est.max))}`;
+    }
+
+    // Mostra sempre le 3 proposte con etichetta
     scenariosEl.style.display = "grid";
-    fastEl.textContent = formatEUR(Number(est.fast));
-    fairEl.textContent = formatEUR(Number(est.fair));
-    maxEl.textContent = formatEUR(Number(est.best));
+    fastEl.textContent =
+  formatEUR(Number(est.fast));  // Vendita
+  rapida
+    fairEl.textContent =
+  formatEUR(Number(est.fair));  // Valore di
+  mercato
+    maxEl.textContent =
+  formatEUR(Number(est.best));   // Miglior
+  offerente
   }
+
+  Poi, nel blocco submit, cambia la parte thanks
+  così:
+
+  const thanksFair =
+  document.getElementById('iv-thanks-fair');
+  const thanksRange =
+  document.getElementById('iv-thanks-range');
+  if (thanksFair && thanksRange) {
+    thanksFair.textContent = `Valore di mercato:
+  ${formatEUR(aiEst.fair)}`;
+    thanksRange.textContent = `Vendita rapida:
+  ${formatEUR(aiEst.fast)} | Miglior offerente:
+  ${formatEUR(aiEst.best)}`;
+  }
+  
 
   function updateEstimate(){
     updateEstimateFromObject(computeEstimate(), false);
@@ -394,7 +430,7 @@
     const res = await fetch(ENDPOINT_URL, { method:'POST', body: aiPayload });
     const data = await res.json().catch(()=> ({}));
     if(!res.ok || !data.ok || !data.estimate){
-      throw new Error(data.error || 'Errore valutazione AI');
+      throw new Error(data.error || 'Errore valutazione dettagliata');
     }
 
     const e = data.estimate;
@@ -443,7 +479,7 @@
       return;
     }
 
-    statusEl.textContent = 'Calcolo valutazione reale con AI…';
+    statusEl.textContent = 'Stiamo completando l’analisi dettagliata dell’immobile…';
     statusEl.classList.remove('iv-bad','iv-ok');
     statusEl.style.display = 'inline-block';
 
@@ -497,3 +533,4 @@
   goTo(0);
   updateEstimate();
 })();
+
