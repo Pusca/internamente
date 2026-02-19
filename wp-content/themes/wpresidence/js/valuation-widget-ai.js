@@ -1,7 +1,6 @@
 ﻿(function () {
   function initValuationWidget() {
     const ENDPOINT_URL = '/wp-content/themes/wpresidence/valuation-handler.php';
-    const ESTIMATE_UPLIFT = 1.07;
 
     const form = document.getElementById('iv-form');
     const wrap = document.getElementById('iv-wrap');
@@ -18,6 +17,9 @@
 
     const cardEl = document.getElementById('iv-card');
     const lockEl = document.getElementById('iv-lock');
+    const lockTitleEl = document.getElementById('iv-lock-title');
+    const lockTextEl = document.getElementById('iv-lock-text');
+
     const badgeEl = document.getElementById('iv-badge');
     const priceMainEl = document.getElementById('iv-price-main');
     const priceRangeEl = document.getElementById('iv-price-range');
@@ -25,6 +27,9 @@
     const fastEl = document.getElementById('iv-fast');
     const fairEl = document.getElementById('iv-fair');
     const maxEl = document.getElementById('iv-max');
+
+    const analysisBoxEl = document.getElementById('iv-analysis-box');
+    const analysisTextEl = document.getElementById('iv-analysis-text');
 
     const parkingSelect = document.getElementById('iv-parking');
     const parkingSqmField = document.getElementById('iv-parking-sqm-field');
@@ -36,28 +41,32 @@
     const outdoorSqmInput = document.getElementById('iv-outdoor-sqm');
     const outdoorSqmLabel = document.getElementById('iv-outdoor-sqm-label');
 
+    const submitBtn = form.querySelector('button[type="submit"]');
+
     if (stepTotalEl) stepTotalEl.textContent = String(totalSteps);
 
     const stepHints = {
       1: 'Dove si trova l\'immobile?',
-      2: 'Tipo immobile e dimensioni',
-      3: 'Qualita e stato generale',
-      4: 'Accessori e contesto',
-      5: 'I tuoi contatti',
-      6: 'Conferma invio',
+      2: 'Dettagli immobile e accessori',
+      3: 'Contatti e conferma',
+      4: 'Conferma invio',
     };
 
-    const pricePerSqm = {
-      milano: 2673, roma: 2077, torino: 1240, venezia: 2513, bologna: 1924,
-      firenze: 1954, napoli: 1731, verona: 1414, padova: 1400, genova: 1344,
-      brescia: 1328, bergamo: 1313, parma: 1477, trento: 1792, rimini: 1793,
-      cagliari: 1480, palermo: 826, catania: 1122,
-    };
+    const propertyFields = [
+      'address', 'city', 'cap', 'type', 'sqm', 'rooms', 'baths', 'area_quality',
+      'year', 'condition', 'building_condition', 'energy', 'floor', 'occupancy',
+      'heating', 'parking', 'parking_sqm', 'outdoor', 'outdoor_sqm', 'exposure',
+      'noise', 'brightness', 'notes',
+    ];
 
-    function normCity(s) {
-      if (!s) return '';
-      return s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\'’]/g, '').replace(/\s\s+/g, ' ');
-    }
+    const propertyCheckFields = ['elevator', 'furnished', 'ac', 'cellar', 'solar', 'view'];
+
+    const aiState = {
+      status: 'idle',
+      estimate: null,
+      hash: '',
+      promise: null,
+    };
 
     function formatEUR(n) {
       if (!isFinite(n)) return '-';
@@ -70,19 +79,6 @@
       } catch (e) {
         return Math.round(n).toLocaleString('it-IT') + ' EUR';
       }
-    }
-
-    function getValue(name) {
-      const el = form.querySelector(`[name="${name}"]`);
-      if (!el) return null;
-      if (el.type === 'checkbox') return el.checked ? 'Si' : 'No';
-      return (el.value ?? '').toString().trim();
-    }
-
-    function getNumber(name) {
-      const v = getValue(name);
-      const n = parseFloat(v);
-      return isFinite(n) ? n : null;
     }
 
     function clearErrors() {
@@ -103,6 +99,14 @@
       const parent = inputEl.closest('.iv-field') || inputEl.parentElement;
       const err = parent ? parent.querySelector('.iv-err') : null;
       if (err) err.textContent = msg;
+    }
+
+    function setLocked(locked, title, text) {
+      if (!cardEl) return;
+      cardEl.classList.toggle('iv-locked', !!locked);
+      if (lockEl) lockEl.style.display = locked ? 'flex' : 'none';
+      if (lockTitleEl && title) lockTitleEl.textContent = title;
+      if (lockTextEl && text) lockTextEl.textContent = text;
     }
 
     function updateConditionalSqmFields() {
@@ -134,10 +138,86 @@
       }
     }
 
-    function setLocked(locked) {
-      if (!cardEl) return;
-      cardEl.classList.toggle('iv-locked', !!locked);
-      if (lockEl) lockEl.style.display = locked ? 'flex' : 'none';
+    function collectPropertyObject() {
+      const out = {};
+      propertyFields.forEach((name) => {
+        const el = form.querySelector(`[name="${name}"]`);
+        if (!el) return;
+        const value = (el.value || '').toString().trim();
+        if (value !== '') out[name] = value;
+      });
+
+      propertyCheckFields.forEach((name) => {
+        const el = form.querySelector(`[name="${name}"]`);
+        out[name] = el && el.checked ? 'Si' : 'No';
+      });
+
+      return out;
+    }
+
+    function propertyHash(obj) {
+      return JSON.stringify(obj);
+    }
+
+    function invalidateAiEstimate() {
+      aiState.status = 'idle';
+      aiState.estimate = null;
+      aiState.promise = null;
+      aiState.hash = '';
+      renderPendingCard();
+      updateAnalysisUi();
+    }
+
+    function renderPendingCard() {
+      if (badgeEl) badgeEl.textContent = 'In attesa';
+      if (priceMainEl) priceMainEl.textContent = '-';
+      if (priceRangeEl) priceRangeEl.textContent = 'Completa i dati per avviare l\'analisi';
+      if (scenariosEl) scenariosEl.style.display = 'none';
+    }
+
+    function renderLoadingCard() {
+      if (badgeEl) badgeEl.textContent = 'Analisi in corso';
+      if (priceMainEl) priceMainEl.textContent = '...';
+      if (priceRangeEl) priceRangeEl.textContent = 'Stiamo elaborando la valutazione completa';
+      if (scenariosEl) scenariosEl.style.display = 'none';
+    }
+
+    function renderEstimateCard(est) {
+      if (!est) {
+        renderPendingCard();
+        return;
+      }
+
+      if (badgeEl) badgeEl.textContent = 'Aggiornata';
+      if (priceMainEl) priceMainEl.textContent = formatEUR(Number(est.fair));
+      if (priceRangeEl) priceRangeEl.textContent = `Range stimato: ${formatEUR(Number(est.min))} - ${formatEUR(Number(est.max))}`;
+
+      if (scenariosEl) scenariosEl.style.display = 'grid';
+      if (fastEl) fastEl.textContent = formatEUR(Number(est.fast));
+      if (fairEl) fairEl.textContent = formatEUR(Number(est.fair));
+      if (maxEl) maxEl.textContent = formatEUR(Number(est.best));
+    }
+
+    function updateAnalysisUi() {
+      if (!analysisBoxEl || !analysisTextEl) return;
+
+      analysisBoxEl.classList.remove('is-loading', 'is-ready', 'is-error');
+
+      if (aiState.status === 'loading') {
+        analysisBoxEl.style.display = 'flex';
+        analysisBoxEl.classList.add('is-loading');
+        analysisTextEl.textContent = 'Analisi immobile in corso. Puoi compilare i contatti nel frattempo.';
+      } else if (aiState.status === 'ready') {
+        analysisBoxEl.style.display = 'flex';
+        analysisBoxEl.classList.add('is-ready');
+        analysisTextEl.textContent = 'Analisi completata. Puoi inviare la richiesta.';
+      } else if (aiState.status === 'error') {
+        analysisBoxEl.style.display = 'flex';
+        analysisBoxEl.classList.add('is-error');
+        analysisTextEl.textContent = 'Analisi non riuscita. Riprova tra qualche secondo.';
+      } else {
+        analysisBoxEl.style.display = 'none';
+      }
     }
 
     function goTo(stepIndex) {
@@ -150,11 +230,18 @@
       if (stepHintEl) stepHintEl.textContent = stepHints[stepNumber] || '';
       if (progressFill) progressFill.style.width = `${Math.round((stepNumber / totalSteps) * 100)}%`;
 
-      setLocked(stepNumber >= 4 && stepNumber < 6);
-      window.scrollTo({ top: wrap.offsetTop - 20, behavior: 'smooth' });
+      if (stepNumber >= 3 && aiState.status !== 'ready') {
+        setLocked(true, 'Analisi in corso', 'Completiamo la valutazione mentre inserisci i contatti.');
+      } else {
+        setLocked(false);
+      }
 
+      if (stepNumber === 3) {
+        updateAnalysisUi();
+      }
+
+      window.scrollTo({ top: wrap.offsetTop - 20, behavior: 'smooth' });
       updateConditionalSqmFields();
-      updateEstimate();
     }
 
     function validateStep(stepIndex) {
@@ -183,7 +270,7 @@
         }
       });
 
-      if (stepIndex === 1) {
+      if (stepIndex === 0) {
         const sqmEl = document.getElementById('iv-mq');
         const sqm = parseFloat(sqmEl?.value || '');
         if (!isFinite(sqm) || sqm < 10) {
@@ -200,173 +287,78 @@
       return ok;
     }
 
-    function clamp(x, a, b) {
-      return Math.max(a, Math.min(b, x));
-    }
-
-    function roundTo(x, step) {
-      return Math.round(x / step) * step;
-    }
-
-    function countMeaningfulFields() {
-      const names = [
-        'address', 'city', 'cap', 'type', 'sqm', 'rooms', 'baths', 'year', 'condition', 'energy', 'floor',
-        'area_quality', 'occupancy', 'building_condition', 'heating', 'parking', 'parking_sqm', 'outdoor',
-        'outdoor_sqm', 'exposure', 'noise', 'brightness', 'notes',
-      ];
-      let c = 0;
-      names.forEach((n) => {
-        const v = getValue(n);
-        if (v && v !== '') c += 1;
+    function buildAiPayloadFromObject(obj) {
+      const fd = new FormData();
+      fd.append('action', 'ai_estimate');
+      Object.keys(obj).forEach((k) => {
+        fd.append(k, obj[k]);
       });
-      ['elevator', 'furnished', 'ac', 'cellar', 'solar', 'view'].forEach((n) => {
-        const el = form.querySelector(`[name="${n}"]`);
-        if (el && el.checked) c += 1;
-      });
-      return c;
+      return fd;
     }
 
-    function computeEstimate() {
-      const city = normCity(getValue('city'));
-      const sqm = getNumber('sqm');
-      if (!sqm || sqm < 10) return null;
+    async function startAiEstimateIfNeeded(force) {
+      const propertyObj = collectPropertyObject();
+      const hash = propertyHash(propertyObj);
 
-      const baseSqm = city && pricePerSqm[city] ? pricePerSqm[city] : 1000;
-      let value = baseSqm * sqm;
-
-      const type = getValue('type');
-      const typeFactor = ({
-        attico: 1.08,
-        villa: 1.03,
-        'casa-indipendente': 0.98,
-        bifamiliare: 1.0,
-        loft: 1.02,
-        ufficio: 0.95,
-        negozio: 0.92,
-        appartamento: 1.0,
-      })[type] ?? 1.0;
-      value *= typeFactor;
-
-      const condition = getValue('condition');
-      const condFactor = ({ nuovo: 1.1, buono: 1.0, 'da-ristrutturare': 0.88 })[condition] ?? 1.0;
-      value *= condFactor;
-
-      const buildingCondition = getValue('building_condition');
-      const buildingFactor = ({ ottimo: 1.02, buono: 1.0, da_aggiornare: 0.97 })[buildingCondition] ?? 1.0;
-      value *= buildingFactor;
-
-      const areaQuality = getValue('area_quality');
-      const areaFactor = ({ centrale: 1.08, semicentrale: 1.03, periferica: 0.95, frazione: 0.9 })[areaQuality] ?? 1.0;
-      value *= areaFactor;
-
-      const energy = getValue('energy');
-      const energyFactor = ({
-        A4: 1.1, A3: 1.09, A2: 1.08, A1: 1.07,
-        A: 1.06, B: 1.04, C: 1.02, D: 1.0,
-        E: 0.97, F: 0.94, G: 0.9, ND: 1.0,
-      })[energy] ?? 1.0;
-      value *= energyFactor;
-
-      const year = getNumber('year');
-      if (year && year < 1960) value *= 0.96;
-      else if (year && year >= 2005) value *= 1.03;
-
-      const floor = getValue('floor');
-      const elevator = form.querySelector('[name="elevator"]')?.checked || false;
-      if (floor === 't') value *= 0.98;
-      if (['4', '5', '6', 'm'].includes(floor) && !elevator) value *= 0.96;
-      if (['4', '5', '6'].includes(floor) && elevator) value *= 1.01;
-
-      const occupancy = getValue('occupancy');
-      if (occupancy === 'locato') value *= 0.97;
-      if (occupancy === 'libero_subito') value *= 1.01;
-
-      const heating = getValue('heating');
-      if (heating === 'pompa-calore') value *= 1.02;
-      if (heating === 'assente') value *= 0.94;
-
-      const parking = getValue('parking');
-      if (parking === 'posto-auto') value *= 1.02;
-      if (parking === 'garage') value *= 1.04;
-      if (parking === 'posto-auto+garage') value *= 1.06;
-
-      const outdoor = getValue('outdoor');
-      if (outdoor === 'balcone') value *= 1.01;
-      if (outdoor === 'terrazzo') value *= 1.03;
-      if (outdoor === 'giardino') value *= 1.04;
-      if (outdoor === 'balcone+giardino') value *= 1.05;
-      if (outdoor === 'terrazzo+giardino') value *= 1.06;
-
-      const noise = getValue('noise');
-      if (noise === 'silenziosa') value *= 1.015;
-      if (noise === 'trafficata') value *= 0.975;
-
-      const brightness = getValue('brightness');
-      if (brightness === 'alta') value *= 1.02;
-      if (brightness === 'bassa') value *= 0.98;
-
-      if (form.querySelector('[name="cellar"]')?.checked) value *= 1.01;
-      if (form.querySelector('[name="solar"]')?.checked) value *= 1.02;
-      if (form.querySelector('[name="view"]')?.checked) value *= 1.02;
-      if (form.querySelector('[name="ac"]')?.checked) value *= 1.01;
-      if (form.querySelector('[name="furnished"]')?.checked) value *= 1.005;
-
-      const outdoorSqm = getNumber('outdoor_sqm') || 0;
-      if (outdoorSqm > 0) {
-        let w = 0.18;
-        if (outdoor && outdoor.includes('terrazzo')) w = 0.25;
-        if (outdoor && outdoor.includes('balcone')) w = Math.max(w, 0.22);
-        if (outdoor && outdoor.includes('giardino')) w = Math.max(w, 0.15);
-        value += outdoorSqm * baseSqm * w;
+      if (!force && aiState.status === 'ready' && aiState.hash === hash && aiState.estimate) {
+        return aiState.estimate;
       }
 
-      const parkingSqm = getNumber('parking_sqm') || 0;
-      if (parkingSqm > 0) {
-        let w = 0.22;
-        if (parking === 'garage' || parking === 'posto-auto+garage') w = 0.3;
-        value += parkingSqm * baseSqm * w;
+      if (!force && aiState.status === 'loading' && aiState.hash === hash && aiState.promise) {
+        return aiState.promise;
       }
 
-      value *= ESTIMATE_UPLIFT;
+      aiState.status = 'loading';
+      aiState.hash = hash;
+      aiState.estimate = null;
+      renderLoadingCard();
+      updateAnalysisUi();
 
-      const filledCount = countMeaningfulFields();
-      const rangePct = clamp(0.22 - (filledCount * 0.0085), 0.09, 0.22);
+      if (submitBtn) submitBtn.disabled = false;
 
-      const fair = roundTo(value, 1000);
-      const min = roundTo(fair * (1 - rangePct), 1000);
-      const max = roundTo(fair * (1 + rangePct), 1000);
-      const fast = roundTo(fair * 0.92, 1000);
-      const best = roundTo(fair * 1.08, 1000);
-      const confidence = rangePct <= 0.12 ? 'Piu precisa' : rangePct <= 0.16 ? 'Buona' : 'Indicativa';
+      aiState.promise = (async () => {
+        try {
+          const payload = buildAiPayloadFromObject(propertyObj);
+          const res = await fetch(ENDPOINT_URL, { method: 'POST', body: payload });
+          const data = await res.json().catch(() => ({}));
 
-      return { fair, min, max, fast, best, confidence };
-    }
+          if (!res.ok || !data.ok || !data.estimate) {
+            throw new Error(data.error || 'Errore analisi valutazione');
+          }
 
-    function updateEstimateFromObject(est, isFinal) {
-      if (!est) {
-        if (badgeEl) badgeEl.textContent = 'Indicativa';
-        if (priceMainEl) priceMainEl.textContent = '-';
-        if (priceRangeEl) priceRangeEl.textContent = 'Compila i dati per vedere la stima';
-        if (scenariosEl) scenariosEl.style.display = 'none';
-        return;
-      }
+          const est = data.estimate;
+          const parsed = {
+            fair: Number(est.estimate_fair || 0),
+            min: Number(est.estimate_min || 0),
+            max: Number(est.estimate_max || 0),
+            fast: Number(est.estimate_fast || 0),
+            best: Number(est.estimate_best || 0),
+            confidence: String(est.estimate_confidence || 'Aggiornata'),
+            summary: String(est.summary || ''),
+          };
 
-      if (badgeEl) badgeEl.textContent = isFinal ? 'Aggiornata' : est.confidence;
-      if (priceMainEl) priceMainEl.textContent = formatEUR(Number(est.fair));
-      if (priceRangeEl) {
-        priceRangeEl.textContent = isFinal
-          ? 'Proposta finale pronta.'
-          : `Range stimato: ${formatEUR(Number(est.min))} - ${formatEUR(Number(est.max))}`;
-      }
+          if (aiState.hash !== hash) {
+            return parsed;
+          }
 
-      if (scenariosEl) scenariosEl.style.display = 'grid';
-      if (fastEl) fastEl.textContent = formatEUR(Number(est.fast));
-      if (fairEl) fairEl.textContent = formatEUR(Number(est.fair));
-      if (maxEl) maxEl.textContent = formatEUR(Number(est.best));
-    }
+          aiState.status = 'ready';
+          aiState.estimate = parsed;
+          renderEstimateCard(parsed);
+          updateAnalysisUi();
+          setLocked(false);
+          return parsed;
+        } catch (err) {
+          if (aiState.hash === hash) {
+            aiState.status = 'error';
+            aiState.estimate = null;
+            updateAnalysisUi();
+            renderPendingCard();
+          }
+          throw err;
+        }
+      })();
 
-    function updateEstimate() {
-      updateEstimateFromObject(computeEstimate(), false);
+      return aiState.promise;
     }
 
     let currentStep = 0;
@@ -376,11 +368,26 @@
       const back = e.target.closest('.iv-back');
 
       if (next) {
-        if (validateStep(currentStep)) {
-          currentStep = Math.min(currentStep + 1, totalSteps - 1);
+        if (!validateStep(currentStep)) return;
+
+        if (currentStep === 1) {
+          currentStep = 2;
           goTo(currentStep);
+          startAiEstimateIfNeeded(false).catch((err) => {
+            console.error(err);
+            if (statusEl) {
+              statusEl.textContent = 'Analisi non disponibile al momento. Riprova.';
+              statusEl.classList.add('iv-bad');
+              statusEl.style.display = 'inline-block';
+            }
+          });
+          return;
         }
+
+        currentStep = Math.min(currentStep + 1, totalSteps - 1);
+        goTo(currentStep);
       }
+
       if (back) {
         clearErrors();
         currentStep = Math.max(currentStep - 1, 0);
@@ -388,14 +395,23 @@
       }
     });
 
-    form.addEventListener('input', () => {
+    function shouldInvalidateByEventTarget(target) {
+      if (!target || !target.name) return false;
+      return propertyFields.includes(target.name) || propertyCheckFields.includes(target.name);
+    }
+
+    form.addEventListener('input', (e) => {
       updateConditionalSqmFields();
-      updateEstimate();
+      if (shouldInvalidateByEventTarget(e.target)) {
+        invalidateAiEstimate();
+      }
     });
 
-    form.addEventListener('change', () => {
+    form.addEventListener('change', (e) => {
       updateConditionalSqmFields();
-      updateEstimate();
+      if (shouldInvalidateByEventTarget(e.target)) {
+        invalidateAiEstimate();
+      }
     });
 
     const newBtn = document.getElementById('iv-new');
@@ -404,63 +420,39 @@
         form.reset();
         clearErrors();
         currentStep = 0;
+        invalidateAiEstimate();
         goTo(0);
-        updateEstimate();
       });
     }
 
-    function buildAiPayload() {
-      const fd = new FormData();
-      fd.append('action', 'ai_estimate');
+    async function ensureAiReadyBeforeSend() {
+      if (aiState.status === 'ready' && aiState.estimate) return aiState.estimate;
 
-      [
-        'address', 'city', 'cap', 'type', 'sqm', 'rooms', 'baths', 'year',
-        'condition', 'energy', 'floor', 'area_quality', 'occupancy',
-        'building_condition', 'heating', 'parking', 'parking_sqm', 'outdoor',
-        'outdoor_sqm', 'exposure', 'noise', 'brightness', 'notes',
-      ].forEach((k) => {
-        const v = getValue(k);
-        if (v !== null && v !== '') fd.append(k, v);
-      });
-
-      ['elevator', 'furnished', 'ac', 'cellar', 'solar', 'view'].forEach((k) => {
-        const el = form.querySelector(`[name="${k}"]`);
-        if (el) fd.append(k, el.checked ? 'Si' : 'No');
-      });
-
-      return fd;
-    }
-
-    async function requestAiEstimate() {
-      const aiPayload = buildAiPayload();
-      const res = await fetch(ENDPOINT_URL, { method: 'POST', body: aiPayload });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok || !data.estimate) {
-        throw new Error(data.error || 'Errore valutazione dettagliata');
+      if (statusEl) {
+        statusEl.textContent = 'Ancora un attimo, stiamo finendo l\'analisi...';
+        statusEl.classList.remove('iv-ok', 'iv-bad');
+        statusEl.style.display = 'inline-block';
       }
 
-      const est = data.estimate;
-      return {
-        fair: Number(est.estimate_fair || 0),
-        min: Number(est.estimate_min || 0),
-        max: Number(est.estimate_max || 0),
-        fast: Number(est.estimate_fast || 0),
-        best: Number(est.estimate_best || 0),
-        confidence: String(est.estimate_confidence || 'Aggiornata'),
-      };
+      try {
+        const est = await startAiEstimateIfNeeded(true);
+        return est;
+      } catch (err) {
+        throw err;
+      }
     }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!validateStep(currentStep)) return;
+      clearErrors();
 
       const requiredFinal = [
         { id: 'iv-name', msg: 'Inserisci nome e cognome.' },
         { id: 'iv-email', msg: 'Inserisci un\'email valida.' },
         { id: 'iv-phone', msg: 'Inserisci un telefono valido.' },
       ];
-      let ok = true;
 
+      let ok = true;
       requiredFinal.forEach((r) => {
         const el = document.getElementById(r.id);
         if (!el || !el.value.trim()) {
@@ -488,33 +480,33 @@
         return;
       }
 
-      if (statusEl) {
-        statusEl.textContent = 'Stiamo completando l\'analisi dettagliata dell\'immobile...';
-        statusEl.classList.remove('iv-bad', 'iv-ok');
-        statusEl.style.display = 'inline-block';
-      }
+      if (submitBtn) submitBtn.disabled = true;
 
       try {
-        const aiEst = await requestAiEstimate();
-        updateEstimateFromObject(aiEst, true);
-        setLocked(false);
+        const aiEst = await ensureAiReadyBeforeSend();
 
-        if (statusEl) statusEl.textContent = 'Invio richiesta...';
+        if (statusEl) {
+          statusEl.textContent = 'Invio richiesta...';
+          statusEl.classList.remove('iv-bad', 'iv-ok');
+          statusEl.style.display = 'inline-block';
+        }
 
         const payload = new FormData(form);
         payload.append('action', 'send_lead');
         payload.append('estimate_fast', String(aiEst.fast));
         payload.append('estimate_fair', String(aiEst.fair));
         payload.append('estimate_best', String(aiEst.best));
+        payload.append('estimate_min', String(aiEst.min));
+        payload.append('estimate_max', String(aiEst.max));
+        payload.append('estimate_confidence', String(aiEst.confidence || ''));
+        payload.append('estimate_summary', String(aiEst.summary || ''));
 
         const res = await fetch(ENDPOINT_URL, { method: 'POST', body: payload });
         const data = await res.json().catch(() => ({}));
+
         if (!res.ok || !data.ok) {
           throw new Error(data.error || 'Errore invio');
         }
-
-        currentStep = totalSteps - 1;
-        goTo(currentStep);
 
         const thanksFair = document.getElementById('iv-thanks-fair');
         const thanksRange = document.getElementById('iv-thanks-range');
@@ -528,19 +520,26 @@
           statusEl.classList.remove('iv-bad');
           statusEl.classList.add('iv-ok');
         }
+
+        currentStep = 3;
+        goTo(currentStep);
       } catch (err) {
         console.error(err);
         if (statusEl) {
-          statusEl.textContent = 'Errore durante la valutazione/invio. Riprova piu tardi.';
+          statusEl.textContent = 'Ancora un attimo, analisi non completata o invio non riuscito. Riprova.';
+          statusEl.classList.remove('iv-ok');
           statusEl.classList.add('iv-bad');
           statusEl.style.display = 'inline-block';
         }
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
       }
     });
 
     updateConditionalSqmFields();
+    renderPendingCard();
+    updateAnalysisUi();
     goTo(0);
-    updateEstimate();
   }
 
   if (document.readyState === 'loading') {

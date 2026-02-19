@@ -1,14 +1,14 @@
 ﻿<div class="iv-wrap" id="iv-wrap">
   <div class="iv-head">
     <h2>Valutazione smart del tuo immobile</h2>
-    <p class="iv-sub">Rispondi a poche domande. La stima si aggiorna in tempo reale.</p>
+    <p class="iv-sub">Compila i dati in 2 step. Avviamo subito l'analisi e intanto inserisci i contatti.</p>
   </div>
 
   <div class="iv-layout">
     <form id="iv-form" class="iv-form" novalidate>
       <div class="iv-progress">
         <div class="iv-progress-top">
-          <span class="iv-progress-label">Step <span id="iv-step-num">1</span> di <span id="iv-step-total">6</span></span>
+          <span class="iv-progress-label">Step <span id="iv-step-num">1</span> di <span id="iv-step-total">4</span></span>
           <span class="iv-progress-hint" id="iv-step-hint">Dove si trova l'immobile?</span>
         </div>
         <div class="iv-progress-bar"><div class="iv-progress-fill" id="iv-progress-fill"></div></div>
@@ -21,24 +21,19 @@
             <input id="iv-address" name="address" required />
             <div class="iv-err"></div>
           </div>
+
           <div class="iv-field">
             <label for="iv-city">Citta *</label>
             <input id="iv-city" name="city" required />
             <div class="iv-err"></div>
           </div>
+
           <div class="iv-field">
             <label for="iv-cap">CAP</label>
             <input id="iv-cap" name="cap" />
             <div class="iv-err"></div>
           </div>
-        </div>
-        <div class="iv-actions">
-          <button type="button" class="iv-btn iv-next">Avanti</button>
-        </div>
-      </div>
 
-      <div class="iv-step" data-step="2" style="display:none;">
-        <div class="iv-grid">
           <div class="iv-field">
             <label for="iv-type">Tipologia *</label>
             <div class="iv-select">
@@ -90,13 +85,13 @@
             <div class="iv-err"></div>
           </div>
         </div>
+
         <div class="iv-actions">
-          <button type="button" class="iv-link iv-back">&larr; Indietro</button>
           <button type="button" class="iv-btn iv-next">Avanti</button>
         </div>
       </div>
 
-      <div class="iv-step" data-step="3" style="display:none;">
+      <div class="iv-step" data-step="2" style="display:none;">
         <div class="iv-grid">
           <div class="iv-field">
             <label for="iv-year">Anno costruzione</label>
@@ -170,22 +165,6 @@
             <div class="iv-err"></div>
           </div>
 
-          <div class="iv-field iv-full">
-            <div class="iv-checkrow">
-              <label class="iv-check"><input type="checkbox" name="elevator" /><span>Ascensore</span></label>
-              <label class="iv-check"><input type="checkbox" name="furnished" /><span>Arredato</span></label>
-              <label class="iv-check"><input type="checkbox" name="ac" /><span>Climatizzazione</span></label>
-            </div>
-          </div>
-        </div>
-        <div class="iv-actions">
-          <button type="button" class="iv-link iv-back">&larr; Indietro</button>
-          <button type="button" class="iv-btn iv-next">Avanti</button>
-        </div>
-      </div>
-
-      <div class="iv-step" data-step="4" style="display:none;">
-        <div class="iv-grid">
           <div class="iv-field">
             <label for="iv-heating">Riscaldamento</label>
             <div class="iv-select">
@@ -293,6 +272,9 @@
 
           <div class="iv-field iv-full">
             <div class="iv-checkrow">
+              <label class="iv-check"><input type="checkbox" name="elevator" /><span>Ascensore</span></label>
+              <label class="iv-check"><input type="checkbox" name="furnished" /><span>Arredato</span></label>
+              <label class="iv-check"><input type="checkbox" name="ac" /><span>Climatizzazione</span></label>
               <label class="iv-check"><input type="checkbox" name="cellar" /><span>Cantina / Solaio</span></label>
               <label class="iv-check"><input type="checkbox" name="solar" /><span>Pannelli solari</span></label>
               <label class="iv-check"><input type="checkbox" name="view" /><span>Vista aperta</span></label>
@@ -305,34 +287,44 @@
             <div class="iv-err"></div>
           </div>
         </div>
+
         <div class="iv-actions">
           <button type="button" class="iv-link iv-back">&larr; Indietro</button>
-          <button type="button" class="iv-btn iv-next">Avanti</button>
+          <button type="button" class="iv-btn iv-next">Avvia analisi e continua</button>
         </div>
       </div>
 
-      <div class="iv-step" data-step="5" style="display:none;">
+      <div class="iv-step" data-step="3" style="display:none;">
+        <div class="iv-analysis" id="iv-analysis-box" style="display:none;">
+          <div class="iv-spinner" aria-hidden="true"></div>
+          <div class="iv-analysis-text" id="iv-analysis-text">Analisi in corso...</div>
+        </div>
+
         <div class="iv-grid">
           <div class="iv-field iv-full">
             <label for="iv-name">Nome e cognome *</label>
             <input id="iv-name" name="name" required />
             <div class="iv-err"></div>
           </div>
+
           <div class="iv-field">
             <label for="iv-email">Email *</label>
             <input id="iv-email" name="email" type="email" required />
             <div class="iv-err"></div>
           </div>
+
           <div class="iv-field">
             <label for="iv-phone">Telefono *</label>
             <input id="iv-phone" name="phone" required />
             <div class="iv-err"></div>
           </div>
+
           <div class="iv-field iv-full">
             <label class="iv-check"><input id="iv-privacy" type="checkbox" name="privacy" required /><span>Accetto privacy *</span></label>
             <div class="iv-err"></div>
           </div>
         </div>
+
         <div class="iv-actions">
           <button type="button" class="iv-link iv-back">&larr; Indietro</button>
           <button type="submit" class="iv-btn">Invia richiesta</button>
@@ -340,7 +332,7 @@
         </div>
       </div>
 
-      <div class="iv-step" data-step="6" style="display:none;">
+      <div class="iv-step" data-step="4" style="display:none;">
         <h3>Grazie! Richiesta inviata.</h3>
         <p><strong id="iv-thanks-fair">-</strong></p>
         <p><strong id="iv-thanks-range">-</strong></p>
@@ -348,22 +340,22 @@
       </div>
     </form>
 
-    <aside class="iv-card" id="iv-card">
+    <aside class="iv-card" id="iv-card" aria-live="polite">
       <div class="iv-lock" id="iv-lock" style="display:none;">
         <div class="iv-lock-inner">
-          <div class="iv-lock-title">Stima completa bloccata</div>
-          <div class="iv-lock-text">Inserisci i contatti per sbloccare.</div>
+          <div class="iv-lock-title" id="iv-lock-title">Analisi in corso</div>
+          <div class="iv-lock-text" id="iv-lock-text">Completiamo la valutazione mentre inserisci i contatti.</div>
         </div>
       </div>
 
       <div class="iv-card-top">
-        <div class="iv-card-title">Stima in tempo reale</div>
-        <div class="iv-badge" id="iv-badge">Indicativa</div>
+        <div class="iv-card-title">Valutazione</div>
+        <div class="iv-badge" id="iv-badge">In attesa</div>
       </div>
 
       <div class="iv-price iv-maskable">
         <div class="iv-price-main" id="iv-price-main">-</div>
-        <div class="iv-price-range" id="iv-price-range">Compila i dati per vedere la stima</div>
+        <div class="iv-price-range" id="iv-price-range">Completa i dati per avviare l'analisi</div>
       </div>
 
       <div class="iv-scenarios iv-maskable" id="iv-scenarios" style="display:none;">
@@ -372,7 +364,7 @@
         <div class="iv-scn"><div class="iv-scn-k">Miglior offerente</div><div class="iv-scn-v" id="iv-max">-</div></div>
       </div>
 
-      <div class="iv-note">La stima visualizzata e una preview indicativa. Il valore finale viene affinato prima dell'invio.</div>
+      <div class="iv-note">La stima viene elaborata con i dati inseriti e aggiornata appena pronta.</div>
     </aside>
   </div>
 </div>
@@ -403,7 +395,7 @@
   .iv-head h2 { margin: 0 0 6px; font-size: 30px; letter-spacing: -0.2px; }
   .iv-sub { margin: 0; color: var(--iv-muted); }
 
-  .iv-layout { display: grid; grid-template-columns: 1.1fr .9fr; gap: 16px; align-items: start; }
+  .iv-layout { display: grid; grid-template-columns: 1.08fr .92fr; gap: 16px; align-items: start; }
   .iv-form, .iv-card { background: var(--iv-surface); border: 1px solid var(--iv-line); border-radius: var(--iv-radius); box-shadow: var(--iv-shadow); }
   .iv-form { padding: 18px; }
   .iv-card { padding: 18px; position: sticky; top: 104px; overflow: hidden; }
@@ -413,7 +405,7 @@
   .iv-progress-label { font-size: 13px; color: var(--iv-muted); }
   .iv-progress-hint { font-size: 13px; font-weight: 700; }
   .iv-progress-bar { height: 10px; background: #f8fafc; border-radius: 999px; overflow: hidden; border: 1px solid var(--iv-line); }
-  .iv-progress-fill { height: 100%; width: 16.7%; background: linear-gradient(90deg, var(--iv-brand), var(--iv-brand-2)); transition: width .25s ease; }
+  .iv-progress-fill { height: 100%; width: 25%; background: linear-gradient(90deg, var(--iv-brand), var(--iv-brand-2)); transition: width .25s ease; }
 
   .iv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
   .iv-full { grid-column: 1/-1; }
@@ -447,10 +439,50 @@
     box-shadow: 0 8px 20px rgba(192, 152, 102, .28);
   }
 
+  .iv-btn[disabled] { opacity: .7; cursor: wait; }
   .iv-link { border: none; background: none; color: #374151; text-decoration: underline; cursor: pointer; }
   .iv-status { font-size: 13px; }
   .iv-status.iv-ok { color: var(--iv-ok); }
   .iv-status.iv-bad { color: var(--iv-err); }
+
+  .iv-analysis {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(192, 152, 102, .35);
+    background: rgba(192, 152, 102, .08);
+    margin-bottom: 14px;
+  }
+
+  .iv-analysis.is-ready { border-color: rgba(22, 163, 74, .35); background: rgba(22, 163, 74, .08); }
+  .iv-analysis.is-error { border-color: rgba(220, 38, 38, .35); background: rgba(220, 38, 38, .08); }
+
+  .iv-spinner {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid rgba(192, 152, 102, .3);
+    border-top-color: var(--iv-brand);
+    animation: ivspin .8s linear infinite;
+    flex: 0 0 18px;
+  }
+
+  .iv-analysis.is-ready .iv-spinner {
+    border-color: rgba(22, 163, 74, .25);
+    border-top-color: #16a34a;
+    animation-duration: 1.2s;
+  }
+
+  .iv-analysis.is-error .iv-spinner {
+    border-color: rgba(220, 38, 38, .25);
+    border-top-color: #dc2626;
+  }
+
+  .iv-analysis-text { font-size: 13px; color: #4b5563; font-weight: 600; }
+
+  @keyframes ivspin { to { transform: rotate(360deg); } }
 
   .iv-card-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   .iv-card-title { font-weight: 900; }

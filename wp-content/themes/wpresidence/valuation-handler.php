@@ -297,6 +297,10 @@ function send_lead_email()
         'Vendita rapida' => clean('estimate_fast'),
         'Valore di mercato' => clean('estimate_fair'),
         'Miglior offerente' => clean('estimate_best'),
+        'Range minimo' => clean('estimate_min'),
+        'Range massimo' => clean('estimate_max'),
+        'Affidabilita' => clean('estimate_confidence'),
+        'Sintesi analisi' => clean('estimate_summary'),
     ];
 
     $body = "CONTATTI\n";
