@@ -71,6 +71,11 @@ function internamente_get_openai_api_key()
         $api_key = trim((string) INTERNAMENTE_OPENAI_API_KEY);
     }
 
+    // Supporta anche la costante standard se impostata in wp-config.php
+    if ($api_key === '' && defined('OPENAI_API_KEY') && is_string(OPENAI_API_KEY)) {
+        $api_key = trim((string) OPENAI_API_KEY);
+    }
+
     if ($api_key === '' && function_exists('getenv')) {
         $env = getenv('OPENAI_API_KEY');
         if (is_string($env)) {
@@ -277,15 +282,9 @@ function send_lead_email()
         'Vista/Affaccio' => clean('view'),
         'Note' => clean('notes'),
         '--- STIMA ---' => '',
-        'Valore mercato (equo)' => clean('estimate_fair'),
         'Vendita rapida' => clean('estimate_fast'),
-  'Valore di mercato' => clean('estimate_fair'),
-  'Miglior offerente' => clean('estimate_best'),
-       
-     
-      
-        
-        
+        'Valore di mercato' => clean('estimate_fair'),
+        'Miglior offerente' => clean('estimate_best'),
     ];
 
     $body = "CONTATTI\n";

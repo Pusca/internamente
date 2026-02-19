@@ -1,0 +1,55 @@
+﻿/* Incolla questo blocco in fondo al tuo <style> del widget Elementor */
+:root{
+  --iv-brand:#C09866;
+  --iv-brand-2:#ad8758;
+}
+
+.iv-progress-fill{
+  background:linear-gradient(90deg,var(--iv-brand),var(--iv-brand-2));
+}
+
+.iv-btn{
+  background:linear-gradient(90deg,var(--iv-brand),var(--iv-brand-2));
+  box-shadow:0 8px 20px rgba(192,152,102,.28);
+}
+
+.iv-field input:focus,
+.iv-field textarea:focus,
+.iv-field select:focus{
+  border-color:var(--iv-brand);
+  box-shadow:0 0 0 4px rgba(192,152,102,.18);
+}
+
+.iv-check input[type="checkbox"]{
+  accent-color:var(--iv-brand);
+}
+
+.iv-badge{
+  border:1px solid rgba(192,152,102,.35);
+  color:#7a5a35;
+  background:rgba(192,152,102,.12);
+}
+
+/* Fix blur: evita che il filtro "sbordi" sul testo sotto */
+.iv-price,
+.iv-scenarios,
+.iv-maskable{
+  position:relative;
+  overflow:hidden;
+  border-radius:12px;
+}
+
+.iv-card.iv-locked .iv-maskable{
+  filter:blur(4px);
+  opacity:.96;
+  transform:translateZ(0);
+  clip-path:inset(0 round 12px);
+}
+
+.iv-lock{
+  background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,.9));
+}
+
+.iv-lock-inner{
+  border:1px solid rgba(192,152,102,.35);
+}
