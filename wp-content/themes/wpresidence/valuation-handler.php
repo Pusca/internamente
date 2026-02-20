@@ -57,6 +57,15 @@ function to_eur_int($value)
     return (int) round((float) $value);
 }
 
+function apply_calibration($value, $factor)
+{
+    $f = (float) $factor;
+    if (!is_finite($f) || $f <= 0) {
+        $f = 1.0;
+    }
+    return (float) $value * $f;
+}
+
 /**
  * Recupera la API key in modo sicuro:
  * - preferisce una costante definita lato server (wp-config.php)
@@ -232,14 +241,18 @@ function ai_estimate_property()
         exit;
     }
 
+    // Calibrazione: le stime risultavano ~10-15% piu alte.
+    // Fattore 0.88 = -12% circa (valore centrale del range).
+    $calibration_factor = 0.88;
+
     $normalized = [
-        'estimate_fair' => to_eur_int($result['estimate_fair'] ?? 0),
-        'estimate_min' => to_eur_int($result['estimate_min'] ?? 0),
-        'estimate_max' => to_eur_int($result['estimate_max'] ?? 0),
-        'estimate_fast' => to_eur_int($result['estimate_fast'] ?? 0),
-        'estimate_best' => to_eur_int($result['estimate_best'] ?? 0),
+        'estimate_fair' => to_eur_int(apply_calibration($result['estimate_fair'] ?? 0, $calibration_factor)),
+        'estimate_min' => to_eur_int(apply_calibration($result['estimate_min'] ?? 0, $calibration_factor)),
+        'estimate_max' => to_eur_int(apply_calibration($result['estimate_max'] ?? 0, $calibration_factor)),
+        'estimate_fast' => to_eur_int(apply_calibration($result['estimate_fast'] ?? 0, $calibration_factor)),
+        'estimate_best' => to_eur_int(apply_calibration($result['estimate_best'] ?? 0, $calibration_factor)),
         'estimate_confidence' => (string) ($result['estimate_confidence'] ?? ''),
-        'estimate_base_sqm' => to_eur_int($result['estimate_base_sqm'] ?? 0),
+        'estimate_base_sqm' => to_eur_int(apply_calibration($result['estimate_base_sqm'] ?? 0, $calibration_factor)),
         'estimate_range_pct' => (int) round((float) ($result['estimate_range_pct'] ?? 0)),
         'summary' => (string) ($result['summary'] ?? ''),
     ];
