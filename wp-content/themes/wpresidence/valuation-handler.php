@@ -165,17 +165,22 @@ function ai_estimate_property()
         'summary' => 'Stima sintetica basata su zona, stato, metratura e comparabili recenti.',
     ];
 
-    $system_prompt = 'Sei un valutatore immobiliare esperto del mercato italiano residenziale. '
+    $system_prompt = 'Sei il valutatore immobiliare interno di Internamente. '
+        . 'Devi replicare il comportamento del nostro valutatore: prudente, coerente e allineato ai soli dati ricevuti. '
+        . 'Non usare conoscenze esterne o comparabili non presenti nei dati. '
         . 'Rispondi solo con JSON valido, senza markdown, senza testo extra. '
-        . 'La stima deve essere prudente, coerente con i dati ricevuti e con incertezza realistica se i dati sono incompleti.';
+        . 'Se i dati sono incompleti, riduci la confidenza e amplia il range.';
 
     $user_prompt = "Valuta questo immobile e restituisci SOLO JSON con queste chiavi:\n"
         . json_encode(array_keys($schema_hint), JSON_UNESCAPED_UNICODE)
         . "\nDati immobile:\n"
         . json_encode($property, JSON_UNESCAPED_UNICODE)
         . "\nVincoli:\n"
+        . "- Usa SOLO i dati forniti: niente ricerche esterne, niente comparabili inventati.\n"
         . "- Considera: citta, zona (se presente), metratura, tipologia, stato immobile, stato edificio, piano, ascensore, classe energetica, accessori, esposizione, luminosita e rumorosita.\n"
-        . "- Se mancano dati chiave, NON essere aggressivo: usa una stima conservativa e allarga il range.\n"
+        . "- Se mancano dati chiave, NON essere aggressivo: usa una stima conservativa, amplia il range e abbassa la confidenza.\n"
+        . "- estimate_base_sqm deve essere coerente con estimate_fair e sqm (valore medio €/mq).\n"
+        . "- estimate_range_pct deve rappresentare l'ampiezza percentuale del range rispetto a estimate_fair.\n"
         . "- Tutti i valori economici devono essere numeri interi in euro.\n"
         . "- estimate_min <= estimate_fair <= estimate_max.\n"
         . "- estimate_fast <= estimate_fair.\n"
@@ -241,9 +246,8 @@ function ai_estimate_property()
         exit;
     }
 
-    // Calibrazione: le stime risultavano ~10-15% piu alte.
-    // Fattore 0.88 = -12% circa (valore centrale del range).
-    $calibration_factor = 0.88;
+    // Calibrazione: disattivata (nessun aggiustamento).
+    $calibration_factor = 1.0;
 
     $normalized = [
         'estimate_fair' => to_eur_int(apply_calibration($result['estimate_fair'] ?? 0, $calibration_factor)),
